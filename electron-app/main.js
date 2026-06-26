@@ -27,6 +27,10 @@ function createWindow() {
 
 // ---- 自动更新 ----
 function setupAutoUpdater() {
+  // 私有仓库认证：仅读取 Releases（只读 token）
+  const GH_DOWNLOAD_TOKEN = "YOUR_READONLY_TOKEN_HERE"; // ← 替换为你的只读 token
+  autoUpdater.requestHeaders = { Authorization: `Bearer ${GH_DOWNLOAD_TOKEN}` };
+
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 

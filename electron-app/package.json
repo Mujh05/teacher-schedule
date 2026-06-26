@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder --win",
-    "build:portable": "electron-builder --win portable"
+    "build:portable": "electron-builder --win portable",
+    "publish": "electron-builder --win --publish always"
   },
   "build": {
     "appId": "com.teacher.schedule",
@@ -29,8 +30,10 @@
       "createStartMenuShortcut": true
     },
     "publish": {
-      "provider": "generic",
-      "url": "http://localhost:8080/updates"
+      "provider": "github",
+      "owner": "Mujh05",
+      "repo": "teacher-schedule",
+      "private": true
     }
   },
   "devDependencies": {
