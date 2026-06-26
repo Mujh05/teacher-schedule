@@ -29,7 +29,7 @@ function createWindow() {
 function setupAutoUpdater() {
   // 私有仓库认证：GitHub provider 通过 GH_TOKEN 环境变量读取
   // ↓ 替换为你的只读 token（仅需 Contents: Read-only 权限）
-  process.env.GH_TOKEN = "YOUR_READONLY_TOKEN_HERE";
+  process.env.GH_TOKEN = "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";
 
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
