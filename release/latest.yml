@@ -1,0 +1,8 @@
+version: 1.3.7
+files:
+  - url: https://ghproxy.net/https://github.com/Mujh05/teacher-schedule/releases/download/v1.3.7/teacher-schedule-setup-1.3.7.exe
+    sha512: XJdfz7OKBNulApoyw8R5sWp7Ym9LLl3wHdplaw208S4RUeCUb8z3brUVzQLqLrfYCMH7mAiWlagA/u3fm3aoPg==
+    size: 84263159
+path: https://ghproxy.net/https://github.com/Mujh05/teacher-schedule/releases/download/v1.3.7/teacher-schedule-setup-1.3.7.exe
+sha512: XJdfz7OKBNulApoyw8R5sWp7Ym9LLl3wHdplaw208S4RUeCUb8z3brUVzQLqLrfYCMH7mAiWlagA/u3fm3aoPg==
+releaseDate: '2026-06-26T12:07:37.163Z'
