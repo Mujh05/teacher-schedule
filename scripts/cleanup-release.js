@@ -4,7 +4,21 @@
 
 const { execSync } = require("child_process");
 
-function gh(args) { return execSync(`"${process.env.GH_PATH || "gh"}" ${args}`, { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], shell: true }).trim(); }
+// 查找 gh 可执行文件
+const GH_PATH = (() => {
+  if (process.env.GH_PATH) return process.env.GH_PATH;
+  // Windows 常见安装路径
+  const candidates = process.platform === "win32" ? [
+    "C:\\Program Files\\GitHub CLI\\gh.exe",
+    "C:\\Program Files (x86)\\GitHub CLI\\gh.exe",
+  ] : ["gh"];
+  for (const c of candidates) {
+    try { require("child_process").execSync(`"${c}" --version`, { stdio: "ignore" }); return c; } catch { continue; }
+  }
+  return "gh"; // fallback, hope it's on PATH
+})();
+
+function gh(args) { return execSync(`"${GH_PATH}" ${args}`, { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], shell: true }).trim(); }
 
 try {
   const pkg = require("../electron-app/package.json");
