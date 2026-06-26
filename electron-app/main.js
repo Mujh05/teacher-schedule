@@ -1,6 +1,9 @@
 const { app, BrowserWindow, Menu, ipcMain, Notification } = require("electron");
 const path = require("path");
 const fs = require("fs");
+
+// 私有仓库认证：必须在 require electron-updater 之前设置
+process.env.GH_TOKEN = "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";
 const { autoUpdater } = require("electron-updater");
 
 let mainWindow;
@@ -27,9 +30,6 @@ function createWindow() {
 
 // ---- 自动更新 ----
 function setupAutoUpdater() {
-  // 私有仓库认证：GitHub provider 通过 GH_TOKEN 环境变量读取
-  process.env.GH_TOKEN = "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";
-
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
