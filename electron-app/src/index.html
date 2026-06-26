@@ -344,10 +344,10 @@ function renderMonth(){
 
 function renderStats(){
   var pr=getPeriodRange();
-  // 计算每个排课在本周期内的出现次数
   var allCls=getFiltered();var schedCounts=[];var totalOccur=0;
   allCls.forEach(function(c){var n=countScheduleInPeriod(c,pr.start,pr.end);schedCounts[c.id]=n;totalOccur+=n;});
-  // 宽度固定的切换组件
+
+  // 顶部切换栏
   var h='<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">';
   h+='<button class="bsm" onclick="statsPeriodOffset--;render()">◀</button>';
   h+='<div style="display:flex;gap:2px;background:var(--bg);border-radius:var(--r);padding:2px">';
@@ -358,8 +358,12 @@ function renderStats(){
   h+='<button class="bsm" onclick="statsPeriodOffset++;render()">▶</button>';
   h+='<button class="bsm bw" onclick="statsPeriodOffset=0;render()">当前</button>';
   h+='</div>';
+
+  // 周期标题
   h+='<div style="text-align:center;font-size:17px;font-weight:700;margin-bottom:14px">'+pr.label+'</div>';
-  h+='<div class="stats">';
+
+  // === 第一行：概览数字 ===
+  h+='<div class="stat-cards">';
   h+='<div class="stc"><div class="num">'+totalOccur+'</div><div class="lbl">周期总排课数</div></div>';
   h+='<div class="stc"><div class="num">'+allCls.length+'</div><div class="lbl">排课模板数</div></div>';
   var standbyCount=0;allCls.forEach(function(c){if(c.standby)standbyCount+=schedCounts[c.id];});
@@ -384,19 +388,24 @@ function renderStats(){
   h+='<div class="stc" style="border-top:3px solid #60a5fa"><div class="num" style="color:#60a5fa">¥'+baseRevenue+'</div><div class="lbl">课时费(¥30/节)</div></div>';
   if(standbyRevenue>0){h+='<div class="stc" style="border-top:3px solid #a855f7"><div class="num" style="color:#a855f7">¥'+standbyRevenue+'</div><div class="lbl">待命费(¥10/节)</div></div>';}
   if(bonusRevenue>0){h+='<div class="stc" style="border-top:3px solid #f59e0b"><div class="num" style="color:#f59e0b">¥'+bonusRevenue+'</div><div class="lbl">报名奖励(¥30/人)</div></div>';}
-  // 折线图按周期内的周或天展示
+  h+='</div>';
+
+  // === 第二行：收入趋势折线图（独占一行） ===
   h+=buildPeriodRevenueChart(allCls,schedCounts,pr);
-  h+='<div class="stc" style="grid-column:span 2"><h3 style="font-size:16px;margin-bottom:10px">各天排课分布</h3>';
+
+  // === 第三行：各天分布柱状图 ===
   var dayCount=[0,0,0,0,0,0,0];allCls.forEach(function(c){
     var n=schedCounts[c.id];
     if(Array.isArray(c.dayOfWeek)){c.dayOfWeek.forEach(function(d){dayCount[d]+=n;});}
     else{dayCount[c.dayOfWeek]+=n;}
   });
   var maxDay=Math.max.apply(null,dayCount.concat([1]));
-  h+='<div class="bar-chart">';
+  h+='<div style="background:var(--bg2);border-radius:var(--r2);padding:16px;box-shadow:var(--sh);margin-bottom:16px"><h3 style="font-size:16px;margin-bottom:10px">各天排课分布</h3><div class="bar-chart">';
   for(var i=0;i<=6;i++){var pct=Math.round(dayCount[i]/maxDay*100);h+='<div class="bar-wrap"><div class="bar" style="height:'+pct+'%"></div><div class="bar-num">'+dayCount[i]+'</div><div class="bar-lbl">'+DAYS[i]+'</div></div>';}
   h+='</div></div>';
-  h+='<div class="stc" style="grid-column:span 2"><h3 style="font-size:16px;margin-bottom:10px">每个学生排课明细</h3>';
+
+  // === 第四行：学生明细 ===
+  h+='<div style="background:var(--bg2);border-radius:var(--r2);padding:16px;box-shadow:var(--sh);margin-bottom:16px"><h3 style="font-size:16px;margin-bottom:10px">每个学生排课明细</h3>';
   db.students.forEach(function(stu){
     var cls=allCls.filter(function(c){return c.studentId===stu.id;});
     var hasTrial=db.schedules.some(function(s){return s.studentId===stu.id&&s.category==="trial";})||db.students.some(function(st){return st.id===stu.id&&st.wasTrial;});
@@ -409,7 +418,8 @@ function renderStats(){
     if(stu.phone)h+=' <span style="color:var(--tx3)">'+esc(stu.phone)+'</span>';
     h+='</div>';
   });
-  h+='</div></div>';
+  h+='</div>';
+
   $("content").innerHTML=h;
 }
 
