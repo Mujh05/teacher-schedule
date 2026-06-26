@@ -121,7 +121,8 @@ button:hover{background:var(--chv)}
       <button id="nextWeek" class="bsm">&#x25B6;</button>
       <button id="todayBtn" class="bsm bw">今天</button>
     </div>
-    <button id="themeBtn" class="bsm">&#x1F319;</button>
+    <button id="checkUpdateBtn" class="bsm" title="检查更新">🔍 检查更新</button>
+            <button id="themeBtn" class="bsm">&#x1F319;</button>
     <button id="exportBtn" class="bsm">&#x1F4E4; 导出</button>
     <button id="importBtn" class="bsm">&#x1F4E5; 导入</button>
     <button id="manageStuBtn" class="bsm bp">&#x1F464; 学生</button>
@@ -656,6 +657,7 @@ function bindEvents(){
   $("exportBtn").addEventListener("click",doExport);
   $("importBtn").addEventListener("click",doImport);
   $("manageStuBtn").addEventListener("click",showStudents);
+  $("checkUpdateBtn").addEventListener("click",checkUpdate);
   
   $("modalOverlay").addEventListener("click",function(e){if(e.target===$("modalOverlay"))closeModal();});
 }
@@ -672,7 +674,7 @@ document.addEventListener("DOMContentLoaded",function(){
     initApp();
   }
 });
-function initApp(){
+function initApp(){bindUpdateEvents();
   var saved=localStorage.getItem(LS_THEME);if(saved)applyTheme(saved);
   loadReminderConf();
   bindEvents();render();
@@ -747,6 +749,85 @@ function sendNotify(title,body){
   }
 }
 
+// ========== 自动更新界面 ==========
+function checkUpdate() {
+  if (!window.electronAPI || !window.electronAPI.checkUpdate) {
+    showUpdateDialog("init", "请在 Electron 客户端中使用此功能", "");
+    return;
+  }
+  showUpdateDialog("checking", "正在检查更新...", "");
+  window.electronAPI.checkUpdate();
+}
+function showUpdateDialog(state, msg, detail) {
+  var h = "<h2>🔍 检查更新</h2>";
+  if (state === "checking") {
+    h += "<div style=\"text-align:center;padding:20px\"><p style=\"font-size:16px\">⏳ " + msg + "</p></div>";
+    h += "<div class=\"br\"><button onclick=\"closeModal()\">取消</button></div>";
+  } else if (state === "init") {
+    h += "<div style=\"text-align:center;padding:20px\"><p style=\"font-size:16px;color:var(--tx3)\">" + msg + "</p></div>";
+    h += "<div class=\"br\"><button class=\"bp\" onclick=\"closeModal()\">知道了</button></div>";
+  } else if (state === "uptodate") {
+    h += "<div style=\"text-align:center;padding:20px\"><p style=\"font-size:40px\">✅</p><p style=\"font-size:16px;color:var(--ok)\">" + msg + "</p></div>";
+    h += "<div class=\"br\"><button class=\"bp\" onclick=\"closeModal()\">好的</button></div>";
+  } else if (state === "available") {
+    h += "<div style=\"text-align:center;padding:20px\"><p style=\"font-size:40px\">🎉</p><p style=\"font-size:16px\">发现新版本: <strong>v" + msg + "</strong></p><p style=\"color:var(--tx3);font-size:13px\">是否立即下载更新？</p></div>";
+    h += "<div class=\"br\"><button onclick=\"closeModal()\">稍后</button><button class=\"bp\" onclick=\"downloadUpdate()\">立即下载</button></div>";
+  } else if (state === "progress") {
+    var pct = Math.round(msg);
+    h += "<div style=\"text-align:center;padding:20px\"><p style=\"font-size:16px\">⏳ 正在下载...</p><div style=\"background:var(--bd);height:20px;border-radius:10px;overflow:hidden;margin:16px 0\"><div style=\"background:var(--ac);height:100%;width:" + pct + "%;transition:width .3s\"></div></div><p style=\"font-size:20px;font-weight:700;color:var(--ac)\">" + pct + "%</p></div>";
+    h += "<div class=\"br\"><button onclick=\"closeModal()\">取消</button></div>";
+  } else if (state === "downloaded") {
+    h += "<div style=\"text-align:center;padding:20px\"><p style=\"font-size:40px\">✅</p><p style=\"font-size:16px\">" + msg + "</p><p style=\"color:var(--tx3);font-size:13px\">重启应用即可生效</p></div>";
+    h += "<div class=\"br\"><button onclick=\"closeModal()\">稍后</button><button class=\"bp\" onclick=\"installUpdate()\">立即重启</button></div>";
+  } else if (state === "error") {
+    h += "<div style=\"text-align:center;padding:20px\"><p style=\"font-size:40px\">❌</p><p style=\"font-size:16px;color:var(--dn)\">更新出错</p><p style=\"color:var(--tx3);font-size:13px\">" + msg + "</p></div>";
+    h += "<div class=\"br\"><button class=\"bp\" onclick=\"closeModal()\">关闭</button></div>";
+  }
+  showModal(h);
+}
+function downloadUpdate() {
+  showUpdateDialog("progress", "0", "");
+  window.electronAPI.downloadUpdate();
+}
+function installUpdate() {
+  window.electronAPI.installUpdate();
+}
+// 绑定更新事件（在 initApp 中调用）
+function bindUpdateEvents() {
+  if (!window.electronAPI) return;
+  if (window.electronAPI.onCheckingForUpdate) {
+    window.electronAPI.onCheckingForUpdate(function () {
+      if (document.getElementById("modalOverlay").classList.contains("show")) {
+        showUpdateDialog("checking", "正在检查更新...", "");
+      }
+    });
+  }
+  if (window.electronAPI.onUpdateAvailable) {
+    window.electronAPI.onUpdateAvailable(function (ver) {
+      showUpdateDialog("available", ver, "");
+    });
+  }
+  if (window.electronAPI.onUpdateNotAvailable) {
+    window.electronAPI.onUpdateNotAvailable(function () {
+      showUpdateDialog("uptodate", "当前已是最新版本", "");
+    });
+  }
+  if (window.electronAPI.onUpdateProgress) {
+    window.electronAPI.onUpdateProgress(function (pct) {
+      showUpdateDialog("progress", String(pct), "");
+    });
+  }
+  if (window.electronAPI.onUpdateDownloaded) {
+    window.electronAPI.onUpdateDownloaded(function () {
+      showUpdateDialog("downloaded", "下载完成！重启以安装更新", "");
+    });
+  }
+  if (window.electronAPI.onUpdateError) {
+    window.electronAPI.onUpdateError(function (msg) {
+      showUpdateDialog("error", msg, "");
+    });
+  }
+}
 </script>
 </body>
 </html>

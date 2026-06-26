@@ -28,7 +28,6 @@ function createWindow() {
 // ---- 自动更新 ----
 function setupAutoUpdater() {
   // 私有仓库认证：GitHub provider 通过 GH_TOKEN 环境变量读取
-  // ↓ 替换为你的只读 token（仅需 Contents: Read-only 权限）
   process.env.GH_TOKEN = "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";
 
   autoUpdater.autoDownload = false;
@@ -36,6 +35,7 @@ function setupAutoUpdater() {
 
   autoUpdater.on("checking-for-update", () => {
     console.log("正在检查更新...");
+    if (mainWindow) mainWindow.webContents.send("checking-for-update");
   });
 
   autoUpdater.on("update-available", (info) => {
@@ -47,6 +47,7 @@ function setupAutoUpdater() {
 
   autoUpdater.on("update-not-available", () => {
     console.log("当前已是最新版本");
+    if (mainWindow) mainWindow.webContents.send("update-not-available");
   });
 
   autoUpdater.on("download-progress", (progress) => {
@@ -63,6 +64,7 @@ function setupAutoUpdater() {
 
   autoUpdater.on("error", (err) => {
     console.log("更新出错:", err.message);
+    if (mainWindow) mainWindow.webContents.send("update-error", err.message);
   });
 
   // 启动后 3 秒检查更新
