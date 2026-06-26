@@ -365,7 +365,7 @@ function renderStats(){
   // === 第一行：概览数字 ===
   h+='<div class="stat-cards">';
   h+='<div class="stc"><div class="num">'+totalOccur+'</div><div class="lbl">周期总排课数</div></div>';
-  h+='<div class="stc"><div class="num">'+allCls.length+'</div><div class="lbl">排课模板数</div></div>';
+  h+='<div class="stc"><div class="num">'+allCls.length+'</div><div class="lbl">排课记录数</div></div>';
   var standbyCount=0;allCls.forEach(function(c){if(c.standby)standbyCount+=schedCounts[c.id];});
   h+='<div class="stc" style="border-top:3px solid #60a5fa"><div class="num" style="color:#60a5fa">'+standbyCount+'</div><div class="lbl">有效待命数</div></div>';
   var catCount={};allCls.forEach(function(c){catCount[c.category]=(catCount[c.category]||0)+schedCounts[c.id];});
