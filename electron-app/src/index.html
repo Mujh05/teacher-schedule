@@ -513,7 +513,7 @@ function showScheduleForm(day,time,editId){
     html2+='<label style="white-space:nowrap"><input type="checkbox" class="fDayCb" value="'+i+'"'+(checked?" checked":"")+'> '+DAYS[i]+' <select class="fDayTime" data-day="'+i+'" style="width:70px">'+timeOpts(checked&&s?s.startTime:selTime)+'<\/select></label>';
   }
   html2+='</div>';
-  var stuId=s?s.studentId:"";
+  var stuId=s?s.studentId:(db.students.length>0?db.students[0].id:"");
   var defContent="",defTextbook="";
   if(stuId){
     var stu2=db.students.find(function(x){return x.id===stuId;});
