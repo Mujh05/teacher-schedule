@@ -503,15 +503,23 @@ function showScheduleForm(day,time,editId){
   var s=null;if(editId)s=db.schedules.find(function(x){return x.id===editId;});
   var html2='<h2>'+(editId?"编辑排课":"新建排课")+'</h2>';
   html2+='<input type="hidden" id="fSid" value="'+(s?s.id:"")+'">';
-  html2+='<label>学生 *</label><select id="fStu">'+stuOpts(s?s.studentId:"")+'<\/select>';
+  html2+='<label>学生 *</label><select id="fStu" onchange="onStuChange()">'+stuOpts(s?s.studentId:"")+'<\/select>';
   var selDay=s?(Array.isArray(s.dayOfWeek)?s.dayOfWeek:[s.dayOfWeek]):(day!=null?[day]:[1]);
-  html2+='<label>星期</label><div class="day-cb-row">';
+  var selTime=s?s.startTime:(time||"08:00");
+  html2+='<label>星期与时间（可多选，独立设时间）</label><div class="day-cb-row">';
   for(var i=0;i<=6;i++){
-    var checked=Array.isArray(selDay)?selDay.indexOf(i)!==-1:selDay===i;
-    html2+='<label><input type="checkbox" class="fDayCb" value="'+i+'"'+(checked?" checked":"")+'> '+DAYS[i]+'</label>';
+    // 编辑模式：只显示已选的天（单天编辑）；新建模式：全部可选
+    var checked=selDay.indexOf(i)!==-1;
+    html2+='<label style="white-space:nowrap"><input type="checkbox" class="fDayCb" value="'+i+'"'+(checked?" checked":"")+'> '+DAYS[i]+' <select class="fDayTime" data-day="'+i+'" style="width:70px">'+timeOpts(checked&&s?s.startTime:selTime)+'<\/select></label>';
   }
   html2+='</div>';
-  html2+='<div class="frow"><div><label>时间(50分钟)</label><select id="fTime">'+timeOpts(s?s.startTime:(time||"08:00"))+'<\/select></div><div><label>学习内容</label><input id="fContent" value="'+(s?esc(s.content||""):"")+'" placeholder="如: Unit5单词"></div><div><label>教材版本</label><input id="fTextbook" value="'+(s?esc(s.textbook||""):"")+'" placeholder="如: 人教版PEP三年级"></div></div>';
+  var stuId=s?s.studentId:"";
+  var defContent="",defTextbook="";
+  if(stuId){
+    var stu2=db.students.find(function(x){return x.id===stuId;});
+    if(stu2){defContent=stu2.content||"";defTextbook=stu2.textbook||"";}
+  }
+  html2+='<div class="frow"><div><label>学习内容</label><input id="fContent" value="'+(s?esc(s.content||defContent):defContent)+'" placeholder="如: Unit5单词"></div><div><label>教材版本</label><input id="fTextbook" value="'+(s?esc(s.textbook||defTextbook):defTextbook)+'" placeholder="如: 人教版PEP三年级"></div></div>';
   // 日期范围：开始日期 + 结束日期（可选）
   var sStart=s&&s.startDate?s.startDate:fmtDate(new Date());
   var sEnd=s&&s.endDate?s.endDate:(function(){var m=getMonday(new Date());m.setDate(m.getDate()+6);return fmtDate(m);})();
@@ -524,20 +532,23 @@ function showScheduleForm(day,time,editId){
   showModal(html2);
 }
 
+function onStuChange(){
+  var stuId=$("fStu").value;
+  if(!stuId)return;
+  var stu=db.students.find(function(x){return x.id===stuId;});
+  if(!stu)return;
+  if(stu.content&&!$("fContent").value) $("fContent").value=stu.content;
+  if(stu.textbook&&!$("fTextbook").value) $("fTextbook").value=stu.textbook;
+}
+
 function saveSchedule(){
   var eid=$("fSid").value;var stuId=$("fStu").value;
   if(!stuId){alert("请选择学生");return;}
   var dayCbs=document.querySelectorAll(".fDayCb:checked");
-  var days=[];
-  dayCbs.forEach(function(cb){days.push(parseInt(cb.value));});
-  if(days.length===0){alert("请至少选择一个星期");return;}
-  var time=$("fTime").value;
-  var p=time.split(":");var h=parseInt(p[0]),m=parseInt(p[1]);
-  var eh=h,em=m+50;if(em>=60){eh++;em-=60;}
+  if(dayCbs.length===0){alert("请至少选择一个星期");return;}
   var stu=db.students.find(function(s){return s.id===stuId;});
   var cat=stu?stu.category:"fixed";
   var oldStandby=false,oldId=null;
-  // 优先使用编辑时的原始 standby 状态，category 始终跟着学生当前分类走
   if(eid){
     var oldEntry=db.schedules.find(function(x){return x.id===eid;});
     if(oldEntry){
@@ -546,11 +557,19 @@ function saveSchedule(){
       db.schedules=db.schedules.filter(function(x){return x.id!==eid;});
     }
   }
-  days.forEach(function(d,i){
+  var usedOldId=false;
+  dayCbs.forEach(function(cb){
+    var d=parseInt(cb.value);
+    // 取该天对应的独立时间下拉框
+    var timeSel=document.querySelector(".fDayTime[data-day='"+d+"']");
+    var time=timeSel?timeSel.value:"08:00";
+    var p=time.split(":");var h=parseInt(p[0]),m=parseInt(p[1]);
+    var eh=h,em=m+50;if(em>=60){eh++;em-=60;}
     var startDate=$("fStartDate")?$("fStartDate").value:"";
     var endDate=$("fEndDate")?$("fEndDate").value:"";
-    var entry={id:i===0&&oldId?oldId:uid(),studentId:stuId,category:cat,dayOfWeek:d,startTime:time,endTime:fmtTime(eh,em),content:$("fContent").value.trim(),textbook:$("fTextbook").value.trim(),note:$("fNote").value.trim(),startDate:startDate,endDate:endDate,standby:oldStandby};
+    var entry={id:!usedOldId&&oldId?oldId:uid(),studentId:stuId,category:cat,dayOfWeek:d,startTime:time,endTime:fmtTime(eh,em),content:$("fContent").value.trim(),textbook:$("fTextbook").value.trim(),note:$("fNote").value.trim(),startDate:startDate,endDate:endDate,standby:oldStandby};
     db.schedules.push(entry);
+    usedOldId=true;
   });
   // 体验课转正：学生为 trial 且非编辑排课，提示转正
   if(stu&&stu.category==="trial"&&!eid){
@@ -591,6 +610,8 @@ function showStudentForm(editId){
   html2+='<\/select>';
   html2+='<label>年级</label><input id="fGrade" value="'+(s&&s.grade?s.grade:"")+'" placeholder="如: 三年级">';
   html2+='<label>联系方式</label><input id="fPhone" value="'+(s&&s.phone?s.phone:"")+'" placeholder="手机/微信">';
+  html2+='<label>默认学习内容</label><input id="fSContent" value="'+(s&&s.content?s.content:"")+'" placeholder="如: Unit5单词（排课时自动填入）">';
+  html2+='<label>默认教材版本</label><input id="fSTextbook" value="'+(s&&s.textbook?s.textbook:"")+'" placeholder="如: 人教版PEP三年级（排课时自动填入）">';
   html2+='<label>备注</label><textarea id="fSNote" placeholder="如: 学习进度...">'+(s&&s.note?s.note:"")+'<\/textarea>';
   html2+='<div class="br">';
   if(editId)html2+='<button class="bd" onclick="delStudent(\''+editId+'\');closeModal()">删除</button>';
@@ -601,7 +622,7 @@ function showStudentForm(editId){
 function saveStudent(){
   var eid=$("fEid").value;var name=$("fName").value.trim();
   if(!name){alert("请输入学生姓名");return;}
-  var data={id:eid||uid(),name:name,category:$("fSCat").value,grade:$("fGrade").value.trim(),phone:$("fPhone").value.trim(),note:$("fSNote").value.trim(),createdAt:eid?(db.students.find(function(s){return s.id===eid;})||{}).createdAt||new Date().toISOString():new Date().toISOString()};
+  var data={id:eid||uid(),name:name,category:$("fSCat").value,grade:$("fGrade").value.trim(),phone:$("fPhone").value.trim(),content:$("fSContent").value.trim(),textbook:$("fSTextbook").value.trim(),note:$("fSNote").value.trim(),createdAt:eid?(db.students.find(function(s){return s.id===eid;})||{}).createdAt||new Date().toISOString():new Date().toISOString()};
   if(eid){var i=db.students.findIndex(function(x){return x.id===eid;});if(i>=0){var oldCat=db.students[i].category;db.students[i]=Object.assign(db.students[i],data);if(oldCat!=="trial"&&data.category==="trial"){db.students[i].wasTrial=true;}if(oldCat==="trial"&&data.category!=="trial"){db.students[i].wasTrial=true;}
     // 同步更新该学生所有已有排课的 category 为学生当前分类（体验课保持不变）
     db.schedules.forEach(function(c){if(c.studentId===eid&&c.category!=="trial"){c.category=data.category;}});}}
