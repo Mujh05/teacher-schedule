@@ -30,14 +30,12 @@ try {
     process.exit(0);
   }
 
-  // 如果已有 Latest release，清理剩余的 Draft
-  if (latestLines.length > 0) {
-    console.log(`[cleanup-release] 已存在 Latest release，清理 ${draftLines.length} 个残留 draft...`);
-    for (const line of draftLines) {
-      const columns = line.split("\t");
-      const tag = columns[0].trim();
-      console.log(`  删除 draft ${tag}`);
-      gh(`release delete ${tag} -R ${repo} --cleanup-tag --yes`);
+  // 如果有 Latest release，清理剩余的 Draft（不要清理自己）
+  if (published.length > 0) {
+    console.log(`[cleanup-release] 已存在 Latest release，清理 ${drafts.length} 个残留 draft...`);
+    for (const d of drafts) {
+      console.log(`  删除 draft id=${d.id}`);
+      gh(`api -X DELETE "repos/${repo}/releases/${d.id}"`);
     }
     console.log("[cleanup-release] 完成");
     process.exit(0);
