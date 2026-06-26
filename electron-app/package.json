@@ -8,7 +8,8 @@
     "build": "electron-builder --win",
     "build:portable": "electron-builder --win portable",
     "publish": "electron-builder --win --publish always",
-    "release": "electron-builder --win --publish always && node ../scripts/cleanup-release.js"
+    "release": "electron-builder --win --publish always && node ../scripts/cleanup-release.js",
+    "clean": "node -e \"require('fs').readdirSync('dist').forEach(function(f){if(f.endsWith('.exe')||f.endsWith('.blockmap'))require('fs').rmSync('dist/'+f)})\""
   },
   "build": {
     "appId": "com.teacher.schedule",
